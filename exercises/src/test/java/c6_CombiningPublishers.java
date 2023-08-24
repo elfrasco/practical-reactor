@@ -39,10 +39,8 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
     public void behold_flatmap() {
         Hooks.enableContextLossTracking(); //used for testing - detects if you are cheating!
 
-        //todo: feel free to change code as you need
-        Mono<String> currentUserEmail = null;
-        Mono<String> currentUserMono = getCurrentUser();
-        getUserEmail(null);
+        Mono<String> currentUserEmail = getCurrentUser()
+                .flatMap(this::getUserEmail);
 
         //don't change below this line
         StepVerifier.create(currentUserEmail)
@@ -59,9 +57,9 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
      */
     @Test
     public void task_executor() {
-        //todo: feel free to change code as you need
-        Flux<Void> tasks = null;
-        taskExecutor();
+
+        Flux<Void> tasks = taskExecutor()
+                .flatMap(Function.identity());
 
         //don't change below this line
         StepVerifier.create(tasks)
@@ -78,9 +76,9 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
      */
     @Test
     public void streaming_service() {
-        //todo: feel free to change code as you need
-        Flux<Message> messageFlux = null;
-        streamingService();
+
+        Flux<Message> messageFlux = streamingService()
+                .flatMapMany(Function.identity());
 
         //don't change below this line
         StepVerifier.create(messageFlux)
@@ -97,10 +95,15 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
      */
     @Test
     public void i_am_rubber_you_are_glue() {
-        //todo: feel free to change code as you need
-        Flux<Integer> numbers = null;
-        numberService1();
-        numberService2();
+
+        Flux<Integer> numbers = numberService1()
+                .concatWith(numberService2());
+
+        //Flux<Integer> numbers = Flux.concat(numberService1(), numberService2());
+
+        // while concat first reads one flux completely and then appends the second flux to that,
+        // merge operator doesn't guarantee the sequence between the two flux.
+        //Flux<Integer> numbers = Flux.merge(numberService1(), numberService2());
 
         //don't change below this line
         StepVerifier.create(numbers)
@@ -123,9 +126,17 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
      */
     @Test
     public void task_executor_again() {
-        //todo: feel free to change code as you need
-        Flux<Void> tasks = null;
-        taskExecutor();
+
+        // Flat map uses merge operator while concatMap uses concat operator.
+        // the concatMap output sequence is ordered - all of the items emitted by the first Observable
+        // being emitted before any of the items emitted by the second Observable,
+        // while flatMap output sequence is merged - the items emitted by the merged Observable may appear
+        // in any order, regardless of which source Observable they came from.
+
+        // The flatMap and flatMapSequential operators subscribe eagerly, the concatMap waits for each inner
+        // completion before generating the next sub-stream and subscribing to it.
+        Flux<Void> tasks = taskExecutor()
+                .concatMap(Function.identity());
 
         //don't change below this line
         StepVerifier.create(tasks)
@@ -141,10 +152,8 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
      */
     @Test
     public void need_for_speed() {
-        //todo: feel free to change code as you need
-        Flux<String> stonks = null;
-        getStocksGrpc();
-        getStocksRest();
+
+        Flux<String> stonks = Flux.firstWithValue(getStocksGrpc(), getStocksRest());
 
         //don't change below this line
         StepVerifier.create(stonks)
@@ -159,10 +168,9 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
      */
     @Test
     public void plan_b() {
-        //todo: feel free to change code as you need
-        Flux<String> stonks = null;
-        getStocksLocalCache();
-        getStocksRest();
+
+        Flux<String> stonks = getStocksLocalCache()
+                .switchIfEmpty(getStocksRest());
 
         //don't change below this line
         StepVerifier.create(stonks)
