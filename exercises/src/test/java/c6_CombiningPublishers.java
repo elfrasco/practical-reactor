@@ -186,10 +186,14 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
      */
     @Test
     public void mail_box_switcher() {
-        //todo: feel free to change code as you need
-        Flux<Message> myMail = null;
-        mailBoxPrimary();
-        mailBoxSecondary();
+
+        Flux<Message> myMail = mailBoxPrimary()
+                .switchOnFirst((signal, flux) -> {
+                    if (Objects.requireNonNull(signal.get()).metaData.equals("spam")) {
+                        return mailBoxSecondary();
+                    }
+                    return flux;
+                });
 
         //don't change below this line
         StepVerifier.create(myMail)
@@ -209,11 +213,19 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
      */
     @Test
     public void instant_search() {
-        //todo: feel free to change code as you need
-        autoComplete(null);
+
         Flux<String> suggestions = userSearchInput()
-                //todo: use one operator only
-                ;
+                // The switchMap operator is similar to flatMap, except that it retains the result of only the latest
+                // observable, discarding the previous ones.
+                // in a scenario where the previous emitted values are not relevant anymore, but only the current ones,
+                // this operator can be used. For example for an infinite stream of hot data, like key strokes in a user
+                // search. If a user types a new character, we immediately want to update the search and we don’t care
+                // about previous search results, because they’re actually outdated. In this exact example, the switchMap
+                // operator will most likely be combined with debouncing behaviour, so that not every key stroke actually
+                // leads to a new call in the backend, relieving our precious servers a bit.
+                // Use switchMap for situations, where only the current data is of importance and dropping previous data
+                // is explicitly desired.
+                .switchMap(this::autoComplete);
 
         //don't change below this line
         StepVerifier.create(suggestions)
