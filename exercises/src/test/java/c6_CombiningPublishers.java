@@ -319,10 +319,12 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
      */
     @Test
     public void car_factory() {
-        //todo: feel free to change code as you need
-        Flux<Car> producedCars = null;
-        carChassisProducer();
-        carEngineProducer();
+
+        Flux<Car> producedCars = carChassisProducer()
+                .zipWith(carEngineProducer(), Car::new);
+
+        /* Flux<Car> producedCars = Flux.zip(carChassisProducer(), carEngineProducer())
+                .map(tuple -> new Car(tuple.getT1(), tuple.getT2())); */
 
         //don't change below this line
         StepVerifier.create(producedCars)
@@ -343,9 +345,16 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
 
     //todo: implement this method based on instructions
     public Mono<String> chooseSource() {
-        sourceA(); //<- choose if sourceRef == "A"
-        sourceB(); //<- choose if sourceRef == "B"
-        return Mono.empty(); //otherwise, return empty
+        return Mono.defer(() -> {
+            switch (sourceRef.get()) {
+                case "A":
+                    return sourceA();
+                case "B":
+                    return sourceB();
+                default:
+                    return Mono.empty();
+            }
+        });
     }
 
     @Test
@@ -373,12 +382,14 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
      */
     @Test
     public void cleanup() {
+        // https://github.com/reactor/BlockHound
         BlockHound.install(); //don't change this line, blocking = cheating!
 
-        //todo: feel free to change code as you need
-        Flux<String> stream = StreamingConnection.startStreaming()
-                                                 .flatMapMany(Function.identity());
-        StreamingConnection.closeConnection();
+        Flux<String> stream = Flux.usingWhen(
+                StreamingConnection.startStreaming(), //resource supplier -> supplies Flux from Mono
+                n -> n, //resource closure  -> closure in this case is same as Flux completion
+                tr -> StreamingConnection.closeConnection() //<-async complete, executes asynchronously after closure
+        );
 
         //don't change below this line
         StepVerifier.create(stream)
