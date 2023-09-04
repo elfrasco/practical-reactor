@@ -241,13 +241,10 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
      */
     @Test
     public void prettify() {
-        //todo: feel free to change code as you need
-        //todo: use when,and,then...
-        Mono<Boolean> successful = null;
-
-        openFile();
-        writeToFile("0x3522285912341");
-        closeFile();
+        Mono<Boolean> successful = Mono.when(openFile())
+                .and(writeToFile("0x3522285912341"))
+                .and(closeFile())
+                .then(Mono.just(true));
 
         //don't change below this line
         StepVerifier.create(successful)
@@ -264,10 +261,9 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
      */
     @Test
     public void one_to_n() {
-        //todo: feel free to change code as you need
-        Flux<String> fileLines = null;
-        openFile();
-        readFile();
+
+        Flux<String> fileLines = openFile()
+                .thenMany(readFile());
 
         StepVerifier.create(fileLines)
                     .expectNext("0x1", "0x2", "0x3")
@@ -280,10 +276,9 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
      */
     @Test
     public void acid_durability() {
-        //todo: feel free to change code as you need
-        Flux<String> committedTasksIds = null;
-        tasksToExecute();
-        commitTask(null);
+
+        Flux<String> committedTasksIds = Flux.concat(tasksToExecute())
+                .flatMapSequential(taskId -> commitTask(taskId).thenReturn(taskId));
 
         //don't change below this line
         StepVerifier.create(committedTasksIds)
@@ -300,10 +295,8 @@ public class c6_CombiningPublishers extends CombiningPublishersBase {
      */
     @Test
     public void major_merger() {
-        //todo: feel free to change code as you need
-        Flux<String> microsoftBlizzardCorp =
-                microsoftTitles();
-        blizzardTitles();
+
+        Flux<String> microsoftBlizzardCorp = Flux.merge(microsoftTitles(), blizzardTitles());
 
         //don't change below this line
         StepVerifier.create(microsoftBlizzardCorp)
